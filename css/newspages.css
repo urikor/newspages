@@ -1,0 +1,20 @@
+#newspages-block li {
+	margin-bottom:15px;
+	list-style: none outside none;
+}
+#created {
+	font-size:10px;
+}
+#newspages-page ul {
+	padding:0;
+}
+#newspages-page li {
+	list-style: none outside none;
+	margin-bottom:25px;
+	border:2px solid lightgray;
+	border-radius:7px;
+	padding:10px;
+}
+input.alt-title {
+	color:gray;
+}

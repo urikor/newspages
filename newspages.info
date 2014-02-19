@@ -1,0 +1,14 @@
+name = Newspages Module
+description = Newspages Module creates Newspages content type, fields for it, Newspages nodes and so on.
+package = Newspages
+core = 7.x
+
+stylesheets[all][] = css/newspages.css
+
+files[] = newspages.install
+files[] = newspages.module
+
+dependencies[] = node
+dependencies[] = field
+
+version = "7.x-1.0"

@@ -1,0 +1,264 @@
+<?php
+
+/**
+ * @file
+ * Install and uninstall functions for the Newspages module.
+ * Installs content type, fields.
+ */
+
+/**
+ * Implements hook_field_schema().
+*/ 
+
+function newspages_field_schema($field) {
+  $columns = array();
+  $columns  = array(
+    'columns' => array(
+      'field_alt_title' => array(
+         'value' => array(
+           'type' => 'varchar',
+           'length' => '255',
+           'not null' => FALSE,
+         ),
+      ),
+      'field_admin_comment' => array(
+         'value' => array(
+           'type' => 'varchar',
+           'length' => '255',
+           'not null' => FALSE,
+         ),
+      )
+    )
+  );
+  $indexes = array( 
+    'field_alt_title' => array('field_alt_title'), 
+    'field_admin_comment' => array('field_admin_comment'), 
+  );
+  
+  return array(
+    'columns' => $columns, 
+    'indexes' => $indexes, 
+  );
+} 
+
+/**
+ * Implements hook_install().
+*/ 
+
+function newspages_install() {
+
+  node_types_rebuild();
+  $types = node_type_get_types();
+  node_add_body_field($types['newspages']); 
+  
+  field_create_field(
+   array(
+    'settings' => array('max_length' => 255),
+    'field_name' => 'field_alt_title',
+    'type' => 'text',
+    'module' => 'text',
+    'cardinality' => '1',
+    'columns' => array(
+      'value' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+      ),
+      'format' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'bundles' => array(
+      'node' => array(
+        'newspages',
+      ),
+    )   
+   )
+  );
+  
+  field_create_field(
+  array(
+    'field_name' => 'field_admin_comment',
+    'cardinality' => 1,
+    'type' => 'text_long',
+    'module' => 'text',
+    'active' => '1',
+    'locked' => '0',
+    'cardinality' => '1',
+    'deleted' => '0',
+    'columns' => array(
+       'value' => array(
+         'type' => 'text',
+         'size' => 'big',
+         'not null' => FALSE,
+       ),
+       'format' => array(
+         'type' => 'varchar',
+         'length' => 255,
+         'not null' => FALSE,
+       ),
+    ),
+    'bundles' => array(
+      'node' => array(
+        'newspages',
+      ),
+    ),
+  )
+  );  
+
+  field_create_instance(
+   array(
+    'label' => 'Alternative title',
+    'widget' => array(
+      'weight' => '1',
+      'type' => 'text_textfield',
+      'module' => 'text',
+      'active' => 1,
+      'settings' => array(
+        'size' => '255',
+      ),
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'type' => 'text_default',
+        'weight' => '0',
+        'settings' => array(),
+        'module' => 'text',
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'type' => 'text_default',
+        'weight' => '0',
+        'settings' => array(),
+        'module' => 'text',
+      ),
+    ),
+    'default_value' => array(
+     array(
+       'value' => 'Here alternative title',
+     ),
+   ),
+   'field_name' => 'field_alt_title',
+   'entity_type' => 'node',
+   'bundle' => 'newspages',
+   'deleted' => '0',
+   )
+  );
+
+  field_create_instance(
+  array(
+    'label' => 'Admin comment',
+    'widget' => array(
+      'weight' => '3',
+      'type' => 'text_textarea',
+      'module' => 'text',
+      'active' => 1,
+      'settings' => array(
+         'rows' => '3',
+      ),
+    ),
+    'display' => array(
+      'default' => array(
+        'label' => 'above',
+        'type' => 'text_default',
+        'weight' => '2',
+        'settings' => array(),
+        'module' => 'text',
+      ),
+      'teaser' => array(
+        'label' => 'above',
+        'type' => 'text_trimmed',
+        'weight' => '2',
+        'settings' => array(
+          'trim_length' => '300',
+        ),
+        'module' => 'text',
+      ),
+    ),
+    'default_value' => array(
+      array(
+        'value' => 'Admin has not comment yet.',
+      ),
+    ),
+    'field_name' => 'field_admin_comment',
+    'entity_type' => 'node',
+    'bundle' => 'newspages',
+    'deleted' => '0',   
+  )
+  );
+  menu_rebuild();
+  
+  for ($i = 1; $i <= 10; $i++) {
+    create_node('New' . $i);
+  } 
+  drupal_set_message($message = st('10 <b>Newspages</b> nodes was created.'), $type = 'status');
+  drupal_set_message($message = st('Module <b>Newspages</b> was successfully installed.'), $type = 'status');
+}
+
+/**
+ * Creating nodes function.
+ */
+function create_node($title) {
+ 
+  $bodytext = '<h2>Lorem ipsum dolor</h2><p style="color: rgb(59, 59, 59);text-align:justify;">Sit amet, <a style="color: rgb(0, 113, 179);">consectetur adipisicing elit</a>, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud <a style="color: rgb(0, 113, 179);">exercitation ullamco</a> laboris nisi ut aliquip ex ea commodo consequat. Maecenas id porttitor Ut enim ad minim veniam, quis nostr udfelis.</p>';
+  
+  $alt_title = 'Alter Title of ';
+  $admin_comment = 'Admin left here a greate comment of  ';
+
+  $node = new stdClass();
+  $node->type = "newspages";
+  node_object_prepare($node);
+
+  $node->title    = $title;
+  $node->language = LANGUAGE_NONE;
+
+  $node->uid = 1;
+
+  $node->body[$node->language][0]['value']   = $bodytext;
+  $node->body[$node->language][0]['summary'] = text_summary($bodytext);
+  $node->body[$node->language][0]['format']  = 'full_html';
+
+  $node->field_alt_title[$node->language][0]['value']   = $alt_title . $title;
+  $node->field_admin_comment[$node->language][0]['value'] = $admin_comment . $title;
+
+  $path = $title;
+  $node->path = array('alias' => $path);
+
+  if ($node = node_submit($node)) { 
+      node_save($node);
+  }
+} 
+
+/**
+ * Implements hook_uninstall().
+ */
+function newspages_uninstall() {
+  $type = 'newspages';   
+  $result = db_query("SELECT nid FROM {node} WHERE type = :type", array(':type' => $type, )); 
+
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  drupal_set_message($message = t('All the <b>Newspages</b> nodes was deleted.'), $type = 'status');
+  
+  field_delete_field('field_alt_title');
+  field_delete_field('field_admin_comment');
+
+  $instances = field_info_instances('node', 'newspages');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+  drupal_set_message($message = t('Fields of Node type <b>Newspages</b> was deleted.'), $type = 'status');
+
+  node_type_delete('newspages');
+  drupal_set_message($message = t('Node type <b>Newspages</b> was deleted.'), $type = 'status');
+  drupal_set_message($message = t('Module <b>Newspages</b> successfully uninstalled.'), $type = 'status');
+  
+  menu_rebuild();
+  field_purge_batch(1000);
+}

@@ -1,0 +1,232 @@
+<?php
+
+/**
+ * @file
+ * The News Module let you create News system.
+ *
+ */
+
+/**
+ * Implements hook_node_info()
+*/
+function newspages_node_info() {
+    return array(
+        'newspages' => array(
+            'name' => t('Newspages'),
+            'base' => 'node_content',
+            'description' => t('You can define new News here'),
+            'has_title' => TRUE,
+            'title_label' => t('Newspages node title')
+         )
+    );
+} 
+ 
+ /**
+ * Implements hook_help().
+ */
+function newspages_help($path, $arg) {
+  switch ($path) {
+    case 'admin/config/administration/newspages':
+      return '<p>' . t('Newspages Module config page') . '</p>';
+
+    case 'admin/help#newspages':
+      $output = '';
+      $output .= t('<p><b>The Newspages Module Help Page</b></p>');
+      $output .= t('<p style="width:500px;text-align:justify;">Newspages module will create next: <ul><li>The <b>Newspages</b> content type</li><li>"Alternate Title" and "Admin Comment" fields for the <b>Newspages</b> content type, creates database schema for it</li><li>2 pages with templates in admin and user sections <a href="/admin/all-the-news">Admin page</a>, <a href="/newspages_page">User page</a> and set links <a href="/admin/all-the-news">All The News for admin</a> - in admin part, <a href="/newspages_page">All The News for users</a> - in user part (Main menu)</li><li>"Last News" block ("A listing of 3 last Newspages nodes" on admin block page)</li><li>Creates and sets  Anonymous and Authenticated users Permissions for the <b>Newspages Module</b></li></ul></p>');
+      return $output;
+  }
+}
+
+/**
+ * Implement hook_form()
+ */
+function newspages_form($node, $form_state) {
+    return node_content_form($node, $form_state);
+}
+
+/**
+ * Implements hook_menu().
+ */
+function newspages_menu() {
+  $items['newspages_page'] = array(
+    'title' => 'All The News for users',
+    'description' => 'Simple page of Newspages contents for users',
+    'page callback' => '_news_page',
+    'access callback' => TRUE,
+    'access arguments' => array('access newspages_page content'),
+    'expanded' => TRUE,
+    'type' => MENU_NORMAL_ITEM,
+    'menu_name' => 'main-menu',
+    'weight' => 2,
+  );
+  $items['admin/all-the-news'] = array(
+    'title' => 'All The News for admin',
+    'description' => 'Simple page of Newspages contents for admin',
+    'page callback' => '_news_page_admin',
+    'access arguments' => array('administer newspages'),
+  );     
+    return $items;
+}
+
+/**
+* Implements hook_permission().
+*/
+function newspages_permission() {
+  return array(
+    'access newspages_page content' => array(
+      'title' => t('Access content for the Newspages module'),
+      'description' => t('Permissions for Newspages module'),
+    )
+  );
+}
+
+/**
+ * News page for users.
+ *
+ */
+function _news_page($content = NULL) {
+
+ if (!user_access('access newspages_page content')) return t('You have not enough permissions for viewing.');
+ 
+ $content = '';
+
+ $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title', 'created', 'language'))
+    ->condition('status', 1)
+    ->condition('n.type', 'newspages')
+    ->orderBy('created', 'DESC');
+ $result = $query->execute()->fetchAll();
+
+ return theme('newspages_page', array('news_page_tpl' => $result));
+}
+
+/**
+ * News page for admin.
+ * 
+ */
+function _news_page_admin($content = NULL) {
+
+  $content = '';
+
+  $header = array(
+    array('data' => 'Title',   'field' => 'title'),
+    array('data' => 'Type',    'field' => 'type'),
+    array('data' => 'Created', 'field' => 'created'),
+    array('data' => 'Changed', 'field' => 'changed'),
+    array('data' => 'Edit the News'),
+    array('data' => 'Delete the News'),
+    );
+ 
+  $query = db_select('node', 'n')
+    ->fields('n', array('nid', 'title', 'type', 'created', 'changed'))
+    ->condition('status', 1)
+    ->condition('n.type', 'newspages')
+    ->extend('PagerDefault')
+    ->limit(8)
+    ->extend('TableSort')
+    ->orderByHeader($header)
+    ->orderBy('created', 'DESC');
+  $result = $query->execute()->fetchAll();
+  
+  return theme('newspages_page_admin', array('news_page_tpl_admin' => $result, 'header' => $header) );
+}
+
+/**
+ * Implements hook_block_info().
+ */
+function newspages_block_info() {
+  $blocks = array();  
+  $blocks['last_newspages'] = array(
+    'info' => t('A listing of 3 last Newspages nodes.'),
+    'cache' => DRUPAL_NO_CACHE,
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function newspages_block_view($delta = '') {
+    $query = db_select('node', 'n')
+       ->fields('n', array('nid', 'title', 'created'))
+       ->condition('status', 1)
+       ->condition('n.type', 'newspages')
+       ->range(0, 3)
+       ->orderBy('created', 'DESC');
+     $result = $query->execute()->fetchAll();
+
+    if (empty($result)) {
+      $blocks['content'] = t('No Newspages posts available.');
+    }
+    else {
+      $blocks = array();
+      $blocks['content'] = theme('newspages_block', array('last_news_block' => $result));
+    }
+    $blocks['subject'] = 'Last News';
+    return $blocks;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function newspages_theme() {
+ return array(
+    'newspages_block' => array(
+      'variables' => array(
+         'last_news_block' => NULL
+      ),
+      'template' => 'newspages-block',
+    ),
+    'newspages_page' => array(
+      'variables' => array(
+         'news_page_tpl' => NULL
+      ),
+      'template' => 'newspages-page',
+    ),
+    'newspages_page_admin' => array(
+      'variables' => array(
+         'news_page_tpl_admin' => NULL,
+         'header' => NULL
+      ),
+      'template' => 'newspages-page-admin',
+    )
+  );
+}
+
+/**
+ * Implements template_preprocess_field().
+ */
+function newspages_preprocess_field(&$vars) {
+  if ($vars['element']['#field_name'] == 'field_alt_title') {
+    $vars['items'][0]['#markup'] = '<input type="text" class="alt-title" value="' . $vars['items'][0]['#markup'] . '">';
+  }
+}
+
+/**
+ * Implements Hook_enabled().
+ */
+function newspages_enable() {
+  $permissions = array(
+    'access newspages_page content'  => TRUE,
+  );
+  user_role_change_permissions(DRUPAL_ANONYMOUS_RID, $permissions);
+  user_role_change_permissions(DRUPAL_AUTHENTICATED_RID, $permissions);
+  drupal_set_message($message = t('The <b>Newspages</b> module was enabled.'), $type = 'status');
+  drupal_set_message($message = t('The <b>Newspages</b> permissions was enabled.'), $type = 'status');
+}
+
+/**
+ * Implements Hook_disabled().
+ */
+function newspages_disable() {
+  $permissions = array('access newspages_page content');
+  $roles = user_roles();
+  foreach ($roles as $rid => $name) {
+    user_role_revoke_permissions($rid, $permissions);
+  }
+  drupal_set_message($message = t('Module <b>Newspages</b> was disabled.'), $type = 'status');
+  drupal_set_message($message = t('The <b>Newspages</b> permissions was disabled.'), $type = 'status');
+  drupal_set_message($message = t('<b><h2>Warning!</h2></b>'), $type = 'status');
+  drupal_set_message($message = t('You must uninstall it on <a href="/admin/modules/uninstall">Modules uninstall page</a>, because it has a set of data in database.'), $type = 'status');
+  drupal_set_message($message = t('During uninstall process will be deleted all Newspages nodes, fields, content type and database data.'), $type = 'status');
+}
